@@ -8,7 +8,7 @@ import requests
 from datetime import datetime, timedelta
 
 # ── Page Config ──────────────────────────────────────────────
-st.set_page_config(page_title="Thornhill Quant League", layout="wide")
+st.set_page_config(page_title="Thornhill Stock League", layout="wide")
 
 # ── Supabase Connection ───────────────────────────────────────
 @st.cache_resource
