@@ -25,7 +25,7 @@ def t(en, fr):
     return fr if FR else en
 
 # ── Title ─────────────────────────────────────────────────────
-st.title("📈 Thornhill Quant League Engine")
+st.title("📈 Thornhill Stock League Engine")
 
 # ════════════════════════════════════════════════════════════
 # Sidebar: Period + Ticker + Quantity Input
