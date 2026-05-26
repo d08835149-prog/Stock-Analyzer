@@ -84,6 +84,21 @@ TRANSLATIONS = {
     "no_history":        {"English": "No analysis history yet.", "Français": "Aucun historique.", "فارسی": "هنوز تاریخچه‌ای وجود ندارد.", "中文": "暂无分析记录。", "한국어": "아직 분석 내역이 없어요."},
     "load_history":      {"English": "Load",                   "Français": "Charger",             "فارسی": "بارگذاری",              "中文": "加载",          "한국어": "불러오기"},
     "login_required":    {"English": "👈 Please login or sign up to use the app.", "Français": "👈 Connectez-vous pour utiliser l'app.", "فارسی": "👈 برای استفاده وارد شوید.", "中文": "👈 请登录或注册以使用应用。", "한국어": "👈 로그인 또는 회원가입 후 이용해주세요."},
+    "session_name":      {"English": "📁 Analysis Name (optional)", "Français": "📁 Nom de l'analyse (optionnel)", "فارسی": "📁 نام تحلیل (اختیاری)", "中文": "📁 分析名称（可选）", "한국어": "📁 분석 이름 (선택)"},
+    "session_placeholder":{"English": "e.g. Tech Portfolio Q2", "Français": "ex: Portefeuille Tech", "فارسی": "مثال: پرتفوی فناوری", "中文": "例：科技股Q2", "한국어": "예: 테크 포트폴리오 Q2"},
+    "change_pw":         {"English": "🔑 Change Password",    "Français": "🔑 Changer le mot de passe", "فارسی": "🔑 تغییر رمز عبور", "中文": "🔑 修改密码", "한국어": "🔑 비밀번호 변경"},
+    "current_pw":        {"English": "Current Password",      "Français": "Mot de passe actuel",  "فارسی": "رمز فعلی",       "中文": "当前密码",   "한국어": "현재 비밀번호"},
+    "new_pw":            {"English": "New Password",          "Français": "Nouveau mot de passe", "فارسی": "رمز جدید",       "中文": "新密码",     "한국어": "새 비밀번호"},
+    "confirm_pw":        {"English": "Confirm New Password",  "Français": "Confirmer le nouveau", "فارسی": "تأیید رمز جدید", "中文": "确认新密码", "한국어": "새 비밀번호 확인"},
+    "pw_changed":        {"English": "✅ Password changed!",  "Français": "✅ Mot de passe modifié!", "فارسی": "✅ رمز تغییر کرد!", "中文": "✅ 密码已修改！", "한국어": "✅ 비밀번호가 변경됐어요!"},
+    "pw_mismatch":       {"English": "❌ Passwords don't match.", "Français": "❌ Les mots de passe ne correspondent pas.", "فارسی": "❌ رمزها یکسان نیستند.", "中文": "❌ 密码不匹配。", "한국어": "❌ 비밀번호가 일치하지 않아요."},
+    "admin_page":        {"English": "🛡️ Admin Panel",        "Français": "🛡️ Panneau Admin",     "فارسی": "🛡️ پنل مدیریت",  "中文": "🛡️ 管理面板", "한국어": "🛡️ 관리자 페이지"},
+    "total_users":       {"English": "Total Users",           "Français": "Utilisateurs",         "فارسی": "کل کاربران",     "中文": "总用户数",   "한국어": "전체 유저"},
+    "total_trades":      {"English": "Total Analyses",        "Français": "Analyses totales",     "فارسی": "کل تحلیل‌ها",    "中文": "总分析次数", "한국어": "전체 분석 수"},
+    "all_users":         {"English": "👥 All Users",          "Français": "👥 Tous les utilisateurs", "فارسی": "👥 همه کاربران", "中文": "👥 所有用户", "한국어": "👥 전체 유저 목록"},
+    "all_trades":        {"English": "📊 All Trade Records",  "Français": "📊 Tous les trades",   "فارسی": "📊 همه معاملات",  "中文": "📊 所有交易记录", "한국어": "📊 전체 거래 내역"},
+    "delete_user":       {"English": "🗑️ Delete User",        "Français": "🗑️ Supprimer",         "فارسی": "🗑️ حذف کاربر",   "中文": "🗑️ 删除用户", "한국어": "🗑️ 유저 삭제"},
+    "user_deleted":      {"English": "✅ User deleted.",       "Français": "✅ Utilisateur supprimé.", "فارسی": "✅ کاربر حذف شد.", "中文": "✅ 用户已删除。", "한국어": "✅ 유저가 삭제됐어요."},
 }
 
 def t(key):
@@ -127,6 +142,15 @@ def do_signup(nickname, password):
     }).execute()
     return "ok"
 
+def do_change_pw(nickname, current_pw, new_pw):
+    res = supabase.table("users").select("*").eq("nickname", nickname).execute()
+    if not res.data or res.data[0]["password"] != hash_pw(current_pw):
+        return "wrong_pw"
+    supabase.table("users").update({"password": hash_pw(new_pw)}).eq("nickname", nickname).execute()
+    return "ok"
+
+ADMIN_NICKNAME = "Ditto"
+
 # ── Title ─────────────────────────────────────────────────────
 st.title("📈 Thornhill Stock League Engine")
 
@@ -164,10 +188,25 @@ with st.sidebar:
         col_w, col_l = st.columns([3, 1])
         col_w.markdown(f"👤 **{st.session_state.nickname}**")
         if col_l.button(t("logout_btn")):
-            st.session_state.logged_in  = False
-            st.session_state.nickname   = ""
+            st.session_state.logged_in    = False
+            st.session_state.nickname     = ""
             st.session_state.load_tickers = []
             st.rerun()
+
+        # ── Change Password ───────────────────────────────
+        with st.expander(t("change_pw")):
+            cur_pw  = st.text_input(t("current_pw"),  type="password", key="cur_pw")
+            new_pw1 = st.text_input(t("new_pw"),      type="password", key="new_pw1")
+            new_pw2 = st.text_input(t("confirm_pw"),  type="password", key="new_pw2")
+            if st.button(t("change_pw"), key="change_pw_btn", use_container_width=True):
+                if new_pw1 != new_pw2:
+                    st.error(t("pw_mismatch"))
+                else:
+                    result = do_change_pw(st.session_state.nickname, cur_pw, new_pw1)
+                    if result == "ok":
+                        st.success(t("pw_changed"))
+                    else:
+                        st.error(t(result))
 
         # ── Analysis History ──────────────────────────────
         st.subheader(t("history"))
@@ -179,12 +218,14 @@ with st.sidebar:
                 .limit(20) \
                 .execute()
             if history.data:
-                hist_df = pd.DataFrame(history.data)[["ticker", "quantity", "price", "created_at"]]
+                hist_df = pd.DataFrame(history.data)
+                cols = ["session_name","ticker", "quantity", "price", "created_at"]
+                cols = [c for c in cols if c in hist_df.columns]
+                hist_df = hist_df[cols]
                 hist_df["created_at"] = pd.to_datetime(hist_df["created_at"]).dt.strftime("%m/%d %H:%M")
                 st.dataframe(hist_df, hide_index=True, use_container_width=True)
 
-                # 불러오기 버튼: 가장 최근 분석 세션 그룹으로 묶기
-                latest_time = history.data[0]["created_at"]
+                latest_time  = history.data[0]["created_at"]
                 latest_batch = [r for r in history.data if r["created_at"] == latest_time]
                 if st.button(t("load_history"), use_container_width=True):
                     st.session_state.load_tickers = [
@@ -228,6 +269,7 @@ with st.sidebar:
             ticker_qty_list.append({"ticker": full_ticker, "qty": int(q_val)})
 
     st.divider()
+    session_name = st.text_input(t("session_name"), placeholder=t("session_placeholder"), key="session_name")
     analyze = st.button(t("analyze"), use_container_width=True)
 
 # ════════════════════════════════════════════════════════════
@@ -281,11 +323,12 @@ if analyze and ticker_qty_list:
             close = ticker_data[tk]["hist"]["Close"]
             current_price = float(close.iloc[-1])
             supabase.table("trades").insert({
-                "user_id":  st.session_state.nickname,
-                "nickname": st.session_state.nickname,
-                "ticker":   tk,
-                "quantity": qty_map[tk],
-                "price":    current_price,
+                "user_id":      st.session_state.nickname,
+                "nickname":     st.session_state.nickname,
+                "ticker":       tk,
+                "quantity":     qty_map[tk],
+                "price":        current_price,
+                "session_name": session_name.strip() if session_name.strip() else None,
             }).execute()
         st.toast(t("saved"), icon="💾")
     except Exception as e:
@@ -477,3 +520,45 @@ elif not st.session_state.logged_in:
     st.info(t("login_required"))
 else:
     st.info(t("info"))
+
+# ════════════════════════════════════════════════════════════
+# Admin Panel (Ditto only)
+# ════════════════════════════════════════════════════════════
+if st.session_state.logged_in and st.session_state.nickname == ADMIN_NICKNAME:
+    st.divider()
+    st.header(t("admin_page"))
+
+    try:
+        all_users  = supabase.table("users").select("*").order("created_at", desc=True).execute()
+        all_trades = supabase.table("trades").select("*").order("created_at", desc=True).execute()
+
+        col1, col2 = st.columns(2)
+        col1.metric(t("total_users"),  len(all_users.data))
+        col2.metric(t("total_trades"), len(all_trades.data))
+
+        st.subheader(t("all_users"))
+        if all_users.data:
+            users_df = pd.DataFrame(all_users.data)[["nickname", "created_at"]]
+            users_df["created_at"] = pd.to_datetime(users_df["created_at"]).dt.strftime("%Y-%m-%d %H:%M")
+            st.dataframe(users_df, hide_index=True, use_container_width=True)
+
+            # 유저 삭제
+            del_nick = st.selectbox(t("delete_user"),
+                                    [u["nickname"] for u in all_users.data if u["nickname"] != ADMIN_NICKNAME])
+            if st.button(t("delete_user"), key="del_user_btn"):
+                supabase.table("trades").delete().eq("nickname", del_nick).execute()
+                supabase.table("users").delete().eq("nickname", del_nick).execute()
+                st.success(t("user_deleted"))
+                st.rerun()
+
+        st.subheader(t("all_trades"))
+        if all_trades.data:
+            trades_df = pd.DataFrame(all_trades.data)
+            cols = ["nickname", "session_name", "ticker", "quantity", "price", "created_at"]
+            cols = [c for c in cols if c in trades_df.columns]
+            trades_df = trades_df[cols]
+            trades_df["created_at"] = pd.to_datetime(trades_df["created_at"]).dt.strftime("%Y-%m-%d %H:%M")
+            st.dataframe(trades_df, hide_index=True, use_container_width=True)
+
+    except Exception as e:
+        st.error(f"Admin error: {e}")
