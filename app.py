@@ -158,7 +158,7 @@ def do_change_pw(nickname, current_pw, new_pw):
     return "ok"
 
 # ── Title ─────────────────────────────────────────────────────
-st.title("📈 Thornhill Stock Engine")
+st.title("📈 Thornhill Stock League Engine")
 
 # ════════════════════════════════════════════════════════════
 # Sidebar: Period + Ticker + Quantity Input
@@ -308,14 +308,28 @@ with st.sidebar:
 @st.cache_data(ttl=600, show_spinner=False)
 def fetch_ticker_data(ticker: str, period: str):
     obj = yf.Ticker(ticker)
-    # yfinance에 2wk 없으므로 1mo 받고 14일 필터링
-    fetch_period = "1mo" if period == "2wk" else period
-    hist = obj.history(period=fetch_period)
+
+    # 짧은 기간은 분 단위 인터벌로 더 촘촘하게
+    INTERVAL_MAP = {
+        "1d":  ("1d",  "5m"),
+        "5d":  ("5d",  "15m"),
+        "1wk": ("1wk", "1h"),
+        "2wk": ("1mo", "1d"),
+    }
+
+    if period in INTERVAL_MAP:
+        fetch_period, interval = INTERVAL_MAP[period]
+        hist = obj.history(period=fetch_period, interval=interval)
+    else:
+        hist = obj.history(period=period)
+
     if hist.empty:
         return None, None
+
     if period == "2wk":
         cutoff = pd.Timestamp.now(tz=hist.index.tz) - pd.Timedelta(days=14)
         hist = hist[hist.index >= cutoff]
+
     return hist, obj.info
 
 # ════════════════════════════════════════════════════════════
