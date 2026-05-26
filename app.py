@@ -68,6 +68,22 @@ TRANSLATIONS = {
     "last_updated":      {"English": "Data as of",            "Français": "Données au",          "فارسی": "داده‌ها تا",            "中文": "数据更新于",    "한국어": "데이터 기준"},
     "cache_note":        {"English": "refreshes every 10 min","Français": "actualisation 10 min","فارسی": "بروزرسانی هر ۱۰ دقیقه","中文": "每10分钟刷新",  "한국어": "10분마다 갱신"},
     "info":              {"English": "👈 Enter a period and tickers on the left, then click Analyze.", "Français": "👈 Entrez une période et des titres, puis cliquez sur Analyser.", "فارسی": "👈 دوره و نماد را وارد کنید، سپس تحلیل را بزنید.", "中文": "👈 在左侧输入周期和代码，然后点击分析。", "한국어": "👈 왼쪽에서 기간과 종목을 입력하고 분석하기를 눌러주세요."},
+    "login":             {"English": "🔐 Login",               "Français": "🔐 Connexion",        "فارسی": "🔐 ورود",               "中文": "🔐 登录",       "한국어": "🔐 로그인"},
+    "signup":            {"English": "📝 Sign Up",             "Français": "📝 Inscription",      "فارسی": "📝 ثبت‌نام",            "中文": "📝 注册",       "한국어": "📝 회원가입"},
+    "nickname":          {"English": "Nickname",               "Français": "Pseudonyme",          "فارسی": "نام کاربری",            "中文": "昵称",          "한국어": "닉네임"},
+    "password":          {"English": "Password",               "Français": "Mot de passe",        "فارسی": "رمز عبور",              "中文": "密码",          "한국어": "비밀번호"},
+    "login_btn":         {"English": "Login",                  "Français": "Se connecter",        "فارسی": "ورود",                  "中文": "登录",          "한국어": "로그인"},
+    "signup_btn":        {"English": "Create Account",         "Français": "Créer un compte",     "فارسی": "ایجاد حساب",            "中文": "创建账户",      "한국어": "계정 만들기"},
+    "logout_btn":        {"English": "Logout",                 "Français": "Déconnexion",         "فارسی": "خروج",                  "中文": "退出",          "한국어": "로그아웃"},
+    "welcome":           {"English": "Welcome",                "Français": "Bienvenue",           "فارسی": "خوش آمدید",             "中文": "欢迎",          "한국어": "환영해요"},
+    "wrong_pw":          {"English": "❌ Wrong password.",     "Français": "❌ Mot de passe incorrect.", "فارسی": "❌ رمز اشتباه است.", "中文": "❌ 密码错误。", "한국어": "❌ 비밀번호가 틀렸어요."},
+    "no_user":           {"English": "❌ Nickname not found.", "Français": "❌ Pseudonyme introuvable.", "فارسی": "❌ نام کاربری یافت نشد.", "中文": "❌ 未找到该昵称。", "한국어": "❌ 닉네임을 찾을 수 없어요."},
+    "nick_taken":        {"English": "❌ Nickname already taken.", "Français": "❌ Pseudonyme déjà pris.", "فارسی": "❌ این نام قبلاً گرفته شده.", "中文": "❌ 昵称已被使用。", "한국어": "❌ 이미 사용 중인 닉네임이에요."},
+    "account_created":   {"English": "✅ Account created! Please login.", "Français": "✅ Compte créé! Connectez-vous.", "فارسی": "✅ حساب ایجاد شد! وارد شوید.", "中文": "✅ 账户已创建！请登录。", "한국어": "✅ 계정이 만들어졌어요! 로그인해주세요."},
+    "history":           {"English": "📂 My Analysis History", "Français": "📂 Mon historique",   "فارسی": "📂 تاریخچه تحلیل‌ها",   "中文": "📂 我的分析记录","한국어": "📂 내 분석 내역"},
+    "no_history":        {"English": "No analysis history yet.", "Français": "Aucun historique.", "فارسی": "هنوز تاریخچه‌ای وجود ندارد.", "中文": "暂无分析记录。", "한국어": "아직 분석 내역이 없어요."},
+    "load_history":      {"English": "Load",                   "Français": "Charger",             "فارسی": "بارگذاری",              "中文": "加载",          "한국어": "불러오기"},
+    "login_required":    {"English": "👈 Please login or sign up to use the app.", "Français": "👈 Connectez-vous pour utiliser l'app.", "فارسی": "👈 برای استفاده وارد شوید.", "中文": "👈 请登录或注册以使用应用。", "한국어": "👈 로그인 또는 회원가입 후 이용해주세요."},
 }
 
 def t(key):
@@ -81,6 +97,36 @@ PERIODS = {
     "한국어":  {"1일":"1d","3일":"5d","1주일":"1wk","2주일":"2wk","1개월":"1mo","3개월":"3mo","6개월":"6mo","1년":"1y","2년":"2y","5년":"5y"},
 }
 
+# ── Session State Init ────────────────────────────────────────
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in  = False
+    st.session_state.nickname   = ""
+    st.session_state.load_tickers = []
+
+def hash_pw(pw):
+    import hashlib
+    return hashlib.sha256(pw.encode()).hexdigest()
+
+def do_login(nickname, password):
+    res = supabase.table("users").select("*").eq("nickname", nickname).execute()
+    if not res.data:
+        return "no_user"
+    if res.data[0]["password"] != hash_pw(password):
+        return "wrong_pw"
+    st.session_state.logged_in = True
+    st.session_state.nickname  = nickname
+    return "ok"
+
+def do_signup(nickname, password):
+    existing = supabase.table("users").select("id").eq("nickname", nickname).execute()
+    if existing.data:
+        return "nick_taken"
+    supabase.table("users").insert({
+        "nickname": nickname,
+        "password": hash_pw(password),
+    }).execute()
+    return "ok"
+
 # ── Title ─────────────────────────────────────────────────────
 st.title("📈 Thornhill Stock League Engine")
 
@@ -90,7 +136,67 @@ st.title("📈 Thornhill Stock League Engine")
 with st.sidebar:
     st.header(t("settings"))
 
-    period_map   = PERIODS[lang]
+    # ── Login / User Section ──────────────────────────────
+    st.divider()
+    if not st.session_state.logged_in:
+        tab_login, tab_signup = st.tabs([t("login"), t("signup")])
+
+        with tab_login:
+            nick = st.text_input(t("nickname"), key="login_nick")
+            pw   = st.text_input(t("password"), type="password", key="login_pw")
+            if st.button(t("login_btn"), use_container_width=True):
+                result = do_login(nick, pw)
+                if result == "ok":
+                    st.rerun()
+                else:
+                    st.error(t(result))
+
+        with tab_signup:
+            nick2 = st.text_input(t("nickname"), key="signup_nick")
+            pw2   = st.text_input(t("password"), type="password", key="signup_pw")
+            if st.button(t("signup_btn"), use_container_width=True):
+                result = do_signup(nick2, pw2)
+                if result == "ok":
+                    st.success(t("account_created"))
+                else:
+                    st.error(t(result))
+    else:
+        col_w, col_l = st.columns([3, 1])
+        col_w.markdown(f"👤 **{st.session_state.nickname}**")
+        if col_l.button(t("logout_btn")):
+            st.session_state.logged_in  = False
+            st.session_state.nickname   = ""
+            st.session_state.load_tickers = []
+            st.rerun()
+
+        # ── Analysis History ──────────────────────────────
+        st.subheader(t("history"))
+        try:
+            history = supabase.table("trades") \
+                .select("*") \
+                .eq("nickname", st.session_state.nickname) \
+                .order("created_at", desc=True) \
+                .limit(20) \
+                .execute()
+            if history.data:
+                hist_df = pd.DataFrame(history.data)[["ticker", "quantity", "price", "created_at"]]
+                hist_df["created_at"] = pd.to_datetime(hist_df["created_at"]).dt.strftime("%m/%d %H:%M")
+                st.dataframe(hist_df, hide_index=True, use_container_width=True)
+
+                # 불러오기 버튼: 가장 최근 분석 세션 그룹으로 묶기
+                latest_time = history.data[0]["created_at"]
+                latest_batch = [r for r in history.data if r["created_at"] == latest_time]
+                if st.button(t("load_history"), use_container_width=True):
+                    st.session_state.load_tickers = [
+                        {"ticker": r["ticker"], "qty": r["quantity"]} for r in latest_batch
+                    ]
+                    st.rerun()
+            else:
+                st.caption(t("no_history"))
+        except Exception as e:
+            st.caption(f"Error: {e}")
+
+    st.divider()
     period_label = st.selectbox(t("select_period"), list(period_map.keys()), index=6)
     period       = period_map[period_label]
 
@@ -174,7 +280,8 @@ if analyze and ticker_qty_list:
             close = ticker_data[tk]["hist"]["Close"]
             current_price = float(close.iloc[-1])
             supabase.table("trades").insert({
-                "user_id":  "Ditto",
+                "user_id":  st.session_state.nickname,
+                "nickname": st.session_state.nickname,
                 "ticker":   tk,
                 "quantity": qty_map[tk],
                 "price":    current_price,
@@ -365,5 +472,7 @@ if analyze and ticker_qty_list:
 
 elif analyze and not ticker_qty_list:
     st.warning(t("enter_one"))
+elif not st.session_state.logged_in:
+    st.info(t("login_required"))
 else:
     st.info(t("info"))
