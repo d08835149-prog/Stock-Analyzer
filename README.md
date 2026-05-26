@@ -82,7 +82,7 @@ Create `.streamlit/secrets.toml`:
 SUPABASE_URL = "your_supabase_url"
 SUPABASE_KEY = "your_supabase_key"
 FINNHUB_API_KEY = "your_finnhub_key"
-ADMIN_NICKNAME = "Ditto"
+ADMIN_NICKNAME = "your_admin_nickname"
 ADMIN_PASSWORD = "your_admin_password"
 ```
 
