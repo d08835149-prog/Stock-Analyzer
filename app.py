@@ -65,6 +65,8 @@ TRANSLATIONS = {
     "no_news":           {"English": "No news in the last 7 days.", "Français": "Aucune nouvelle (7j).", "فارسی": "خبری در ۷ روز گذشته نیست.", "中文": "过去7天无新闻。", "한국어": "최근 7일간 뉴스가 없어요."},
     "no_key":            {"English": "🔑 Add FINNHUB_API_KEY to secrets.", "Français": "🔑 Ajoutez FINNHUB_API_KEY.", "فارسی": "🔑 کلید FINNHUB_API_KEY را اضافه کنید.", "中文": "🔑 请添加 FINNHUB_API_KEY。", "한국어": "🔑 FINNHUB_API_KEY를 secrets에 추가해주세요."},
     "enter_one":         {"English": "Please enter at least one ticker.", "Français": "Entrez au moins un titre.", "فارسی": "حداقل یک نماد وارد کنید.", "中文": "请至少输入一个股票代码。", "한국어": "최소 1개 이상의 티커를 입력해주세요."},
+    "last_updated":      {"English": "Data as of",            "Français": "Données au",          "فارسی": "داده‌ها تا",            "中文": "数据更新于",    "한국어": "데이터 기준"},
+    "cache_note":        {"English": "refreshes every 10 min","Français": "actualisation 10 min","فارسی": "بروزرسانی هر ۱۰ دقیقه","中文": "每10分钟刷新",  "한국어": "10분마다 갱신"},
     "info":              {"English": "👈 Enter a period and tickers on the left, then click Analyze.", "Français": "👈 Entrez une période et des titres, puis cliquez sur Analyser.", "فارسی": "👈 دوره و نماد را وارد کنید، سپس تحلیل را بزنید.", "中文": "👈 在左侧输入周期和代码，然后点击分析。", "한국어": "👈 왼쪽에서 기간과 종목을 입력하고 분석하기를 눌러주세요."},
 }
 
@@ -72,11 +74,11 @@ def t(key):
     return TRANSLATIONS[key][lang]
 
 PERIODS = {
-    "English": {"1 Day":"1d","3 Days":"5d","1 Week":"1wk","1 Month":"1mo","3 Months":"3mo","6 Months":"6mo","1 Year":"1y","2 Years":"2y","5 Years":"5y"},
-    "Français":{"1 jour":"1d","3 jours":"5d","1 semaine":"1wk","1 mois":"1mo","3 mois":"3mo","6 mois":"6mo","1 an":"1y","2 ans":"2y","5 ans":"5y"},
-    "فارسی":   {"۱ روز":"1d","۳ روز":"5d","۱ هفته":"1wk","۱ ماه":"1mo","۳ ماه":"3mo","۶ ماه":"6mo","۱ سال":"1y","۲ سال":"2y","۵ سال":"5y"},
-    "中文":    {"1天":"1d","3天":"5d","1周":"1wk","1个月":"1mo","3个月":"3mo","6个月":"6mo","1年":"1y","2年":"2y","5年":"5y"},
-    "한국어":  {"1일":"1d","3일":"5d","1주일":"1wk","1개월":"1mo","3개월":"3mo","6개월":"6mo","1년":"1y","2년":"2y","5년":"5y"},
+    "English": {"1 Day":"1d","3 Days":"5d","1 Week":"1wk","2 Weeks":"2wk","1 Month":"1mo","3 Months":"3mo","6 Months":"6mo","1 Year":"1y","2 Years":"2y","5 Years":"5y"},
+    "Français":{"1 jour":"1d","3 jours":"5d","1 semaine":"1wk","2 semaines":"2wk","1 mois":"1mo","3 mois":"3mo","6 mois":"6mo","1 an":"1y","2 ans":"2y","5 ans":"5y"},
+    "فارسی":   {"۱ روز":"1d","۳ روز":"5d","۱ هفته":"1wk","۲ هفته":"2wk","۱ ماه":"1mo","۳ ماه":"3mo","۶ ماه":"6mo","۱ سال":"1y","۲ سال":"2y","۵ سال":"5y"},
+    "中文":    {"1天":"1d","3天":"5d","1周":"1wk","2周":"2wk","1个月":"1mo","3个月":"3mo","6个月":"6mo","1年":"1y","2年":"2y","5年":"5y"},
+    "한국어":  {"1일":"1d","3일":"5d","1주일":"1wk","2주일":"2wk","1개월":"1mo","3개월":"3mo","6개월":"6mo","1년":"1y","2년":"2y","5년":"5y"},
 }
 
 # ── Title ─────────────────────────────────────────────────────
@@ -126,10 +128,15 @@ with st.sidebar:
 # ════════════════════════════════════════════════════════════
 @st.cache_data(ttl=600, show_spinner=False)
 def fetch_ticker_data(ticker: str, period: str):
-    obj  = yf.Ticker(ticker)
-    hist = obj.history(period=period)
+    obj = yf.Ticker(ticker)
+    # yfinance에 2wk 없으므로 1mo 받고 14일 필터링
+    fetch_period = "1mo" if period == "2wk" else period
+    hist = obj.history(period=fetch_period)
     if hist.empty:
         return None, None
+    if period == "2wk":
+        cutoff = pd.Timestamp.now(tz=hist.index.tz) - pd.Timedelta(days=14)
+        hist = hist[hist.index >= cutoff]
     return hist, obj.info
 
 # ════════════════════════════════════════════════════════════
@@ -152,6 +159,10 @@ if analyze and ticker_qty_list:
                 ticker_data[tk] = {"hist": hist, "info": info}
             else:
                 st.warning(f"⚠️ {t('no_data')} {tk}.")
+
+    if ticker_data:
+        last_updated = datetime.now().strftime("%Y-%m-%d %H:%M")
+        st.caption(f"🕒 {t('last_updated')} {last_updated} · {t('cache_note')}")
 
     if not all_close:
         st.error(t("no_valid"))
