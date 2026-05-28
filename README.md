@@ -142,6 +142,6 @@ Add all secrets under **App Settings → Secrets** in the Streamlit Cloud dashbo
 | Developer | Ditto A. |
 | Feedback Source | Miguel |
 | AI Assistant | Claude (Anthropic) |
-| All other people who gave ideas and feedback |
+| All other people who gave ideas and feedback | SUZAN |
 
 
