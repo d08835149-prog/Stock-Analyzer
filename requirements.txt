@@ -3,5 +3,7 @@ yfinance==0.2.54
 pandas
 plotly
 supabase
+requests
 reportlab
 kaleido==0.2.1
+curl_cffi
