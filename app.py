@@ -465,56 +465,91 @@ with st.sidebar:
     analyze = st.button(t("analyze"), use_container_width=True)
 
 # ════════════════════════════════════════════════════════════
-# Cached Data Fetcher (10 min TTL)
+# Cached Data Fetcher — Twelve Data API
 # ════════════════════════════════════════════════════════════
-# 캐시된 마지막 데이터 저장용 (rate limit 걸렸을 때 fallback)
 if "last_ticker_cache" not in st.session_state:
     st.session_state.last_ticker_cache = {}
 
+TWELVEDATA_KEY = st.secrets.get("TWELVEDATA_API_KEY", "")
+
+PERIOD_TO_TD = {
+    "1d":  ("1min",  "1day"),
+    "5d":  ("15min", "5day"),
+    "1wk": ("1h",    "1week"),
+    "2wk": ("1day",  "1month"),
+    "1mo": ("1day",  "1month"),
+    "3mo": ("1day",  "3month"),
+    "6mo": ("1day",  "6month"),
+    "1y":  ("1day",  "1year"),
+    "2y":  ("1week", "2year"),
+    "5y":  ("1week", "5year"),
+}
+
 @st.cache_data(ttl=1200, show_spinner=False)
 def fetch_ticker_data(ticker: str, period: str):
-    import time
-    time.sleep(1)
-    obj = yf.Ticker(ticker)
+    interval, outputsize_period = PERIOD_TO_TD.get(period, ("1day", "1year"))
 
-    INTERVAL_MAP = {
-        "1d":  ("1d",  "5m"),
-        "5d":  ("5d",  "15m"),
-        "1wk": ("1wk", "1h"),
-        "2wk": ("1mo", "1d"),
+    # Time series
+    url = "https://api.twelvedata.com/time_series"
+    params = {
+        "symbol":     ticker,
+        "interval":   interval,
+        "outputsize": 5000,
+        "order":      "ASC",
+        "apikey":     TWELVEDATA_KEY,
     }
+    r = requests.get(url, params=params, timeout=10)
+    data = r.json()
 
-    if period in INTERVAL_MAP:
-        fetch_period, interval = INTERVAL_MAP[period]
-        hist = obj.history(period=fetch_period, interval=interval)
-    else:
-        hist = obj.history(period=period)
-
-    if hist.empty:
+    if data.get("status") == "error" or "values" not in data:
         return None, None
 
-    if period == "2wk":
-        cutoff = pd.Timestamp.now(tz=hist.index.tz) - pd.Timedelta(days=14)
-        hist = hist[hist.index >= cutoff]
+    values = data["values"]
+    df = pd.DataFrame(values)
+    df["datetime"] = pd.to_datetime(df["datetime"])
+    df = df.set_index("datetime")
+    for col in ["open","high","low","close","volume"]:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    df = df.rename(columns={"open":"Open","high":"High","low":"Low","close":"Close","volume":"Volume"})
 
-    return hist, obj.info
+    # 2wk 필터링
+    if period == "2wk":
+        cutoff = pd.Timestamp.now() - pd.Timedelta(days=14)
+        df = df[df.index >= cutoff]
+
+    # 종목 기본 정보
+    quote_url = "https://api.twelvedata.com/quote"
+    q = requests.get(quote_url, params={"symbol": ticker, "apikey": TWELVEDATA_KEY}, timeout=10).json()
+
+    info = {
+        "currentPrice":    float(q.get("close", 0) or 0),
+        "previousClose":   float(q.get("previous_close", 0) or 0),
+        "open":            float(q.get("open", 0) or 0),
+        "dayHigh":         float(q.get("high", 0) or 0),
+        "dayLow":          float(q.get("low", 0) or 0),
+        "bid":             "N/A",
+        "ask":             "N/A",
+        "marketCap":       None,
+        "name":            q.get("name", ticker),
+    }
+
+    return df, info
 
 def fetch_with_fallback(ticker: str, period: str):
     cache_key = f"{ticker}_{period}"
     try:
         hist, info = fetch_ticker_data(ticker, period)
         if hist is not None:
-            # 성공하면 세션에 백업 저장
             st.session_state.last_ticker_cache[cache_key] = {
                 "hist": hist, "info": info,
                 "cached_at": datetime.now().strftime("%Y-%m-%d %H:%M")
             }
-        return hist, info, False  # False = 캐시 아님
+        return hist, info, False
     except Exception:
-        # rate limit 등 에러 → 마지막 캐시 데이터 반환
         if cache_key in st.session_state.last_ticker_cache:
             cached = st.session_state.last_ticker_cache[cache_key]
-            return cached["hist"], cached["info"], cached["cached_at"]  # 캐시된 시간 반환
+            return cached["hist"], cached["info"], cached["cached_at"]
         return None, None, False
 
 # ════════════════════════════════════════════════════════════
@@ -595,20 +630,21 @@ if analyze and ticker_qty_list:
     st.dataframe(summary_df, hide_index=True, use_container_width=True)
 
     # ── PDF Download ──────────────────────────────────────
-    pdf_buffer = generate_pdf_report(
-        summary_rows, ticker_data, period_label,
-        st.session_state.nickname,
-        session_name if session_name.strip() else "Analysis Report",
-        all_close
-    )
-    filename = f"{session_name.strip() or 'report'}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
-    st.download_button(
-        label="📄 Download PDF Report",
-        data=pdf_buffer,
-        file_name=filename,
-        mime="application/pdf",
-        use_container_width=True,
-    )
+    if st.session_state.logged_in:
+        pdf_buffer = generate_pdf_report(
+            summary_rows, ticker_data, period_label,
+            st.session_state.nickname,
+            session_name if session_name.strip() else "Analysis Report",
+            all_close
+        )
+        filename = f"{session_name.strip() or 'report'}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+        st.download_button(
+            label="📄 Download PDF Report",
+            data=pdf_buffer,
+            file_name=filename,
+            mime="application/pdf",
+            use_container_width=True,
+        )
 
     # ── 2. Combined Price Chart ───────────────────────────
     st.divider()
@@ -660,7 +696,15 @@ if analyze and ticker_qty_list:
         bid           = info.get("bid", "N/A")
         ask           = info.get("ask", "N/A")
         mkt_cap       = info.get("marketCap", None)
-        mkt_cap_str   = f"${mkt_cap:,.0f}" if mkt_cap else "N/A"
+
+        def fmt_mkt_cap(v):
+            if not v: return "N/A"
+            if v >= 1e12: return f"${v/1e12:.2f}T"
+            if v >= 1e9:  return f"${v/1e9:.2f}B"
+            if v >= 1e6:  return f"${v/1e6:.2f}M"
+            return f"${v:,.0f}"
+
+        mkt_cap_str = fmt_mkt_cap(mkt_cap)
 
         start_price = close.iloc[0]
         ret_pct     = (current_price - start_price) / start_price * 100
