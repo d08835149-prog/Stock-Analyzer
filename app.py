@@ -1,9 +1,9 @@
 import streamlit as st
-import yfinance as yf
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from supabase import create_client
+import psycopg2
+from psycopg2.extras import RealDictCursor
 import requests
 from datetime import datetime, timedelta
 import io
@@ -24,12 +24,19 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ── Supabase Connection ───────────────────────────────────────
+# ── Neon DB Connection ────────────────────────────────────────
 @st.cache_resource
-def init_supabase():
-    return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
+def init_db():
+    return psycopg2.connect(st.secrets["NEON_DATABASE_URL"])
 
-supabase = init_supabase()
+def get_db():
+    conn = init_db()
+    try:
+        conn.cursor().execute("SELECT 1")
+    except Exception:
+        init_db.clear()
+        conn = init_db()
+    return conn
 
 # ── Language Toggle ───────────────────────────────────────────
 lang = st.radio(
@@ -293,30 +300,40 @@ def hash_pw(pw):
     return hashlib.sha256(pw.encode()).hexdigest()
 
 def do_login(nickname, password):
-    res = supabase.table("users").select("*").eq("nickname", nickname).execute()
-    if not res.data:
+    conn = get_db()
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute("SELECT * FROM users WHERE nickname = %s", (nickname,))
+        user = cur.fetchone()
+    if not user:
         return "no_user"
-    if res.data[0]["password"] != hash_pw(password):
+    if user["password"] != hash_pw(password):
         return "wrong_pw"
     st.session_state.logged_in = True
     st.session_state.nickname  = nickname
     return "ok"
 
 def do_signup(nickname, password):
-    existing = supabase.table("users").select("id").eq("nickname", nickname).execute()
-    if existing.data:
-        return "nick_taken"
-    supabase.table("users").insert({
-        "nickname": nickname,
-        "password": hash_pw(password),
-    }).execute()
+    conn = get_db()
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute("SELECT id FROM users WHERE nickname = %s", (nickname,))
+        if cur.fetchone():
+            return "nick_taken"
+        cur.execute("INSERT INTO users (nickname, password) VALUES (%s, %s)",
+                    (nickname, hash_pw(password)))
+        conn.commit()
     return "ok"
 
 def do_change_pw(nickname, current_pw, new_pw):
-    res = supabase.table("users").select("*").eq("nickname", nickname).execute()
-    if not res.data or res.data[0]["password"] != hash_pw(current_pw):
+    conn = get_db()
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute("SELECT * FROM users WHERE nickname = %s", (nickname,))
+        user = cur.fetchone()
+    if not user or user["password"] != hash_pw(current_pw):
         return "wrong_pw"
-    supabase.table("users").update({"password": hash_pw(new_pw)}).eq("nickname", nickname).execute()
+    with conn.cursor() as cur:
+        cur.execute("UPDATE users SET password = %s WHERE nickname = %s",
+                    (hash_pw(new_pw), nickname))
+        conn.commit()
     return "ok"
 
 # ── Title ─────────────────────────────────────────────────────
@@ -403,22 +420,23 @@ with st.sidebar:
         # ── Analysis History ──────────────────────────────
         st.subheader(t("history"))
         try:
-            history = supabase.table("trades") \
-                .select("*") \
-                .eq("nickname", st.session_state.nickname) \
-                .order("created_at", desc=True) \
-                .limit(20) \
-                .execute()
-            if history.data:
-                hist_df = pd.DataFrame(history.data)
-                cols = ["session_name","ticker", "quantity", "price", "created_at"]
+            conn = get_db()
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT * FROM trades WHERE nickname = %s
+                    ORDER BY created_at DESC LIMIT 20
+                """, (st.session_state.nickname,))
+                rows = cur.fetchall()
+            if rows:
+                hist_df = pd.DataFrame(rows)
+                cols = ["session_name", "ticker", "quantity", "price", "created_at"]
                 cols = [c for c in cols if c in hist_df.columns]
                 hist_df = hist_df[cols]
                 hist_df["created_at"] = pd.to_datetime(hist_df["created_at"]).dt.strftime("%m/%d %H:%M")
                 st.dataframe(hist_df, hide_index=True, use_container_width=True)
 
-                latest_time  = history.data[0]["created_at"]
-                latest_batch = [r for r in history.data if r["created_at"] == latest_time]
+                latest_time  = rows[0]["created_at"]
+                latest_batch = [r for r in rows if r["created_at"] == latest_time]
                 if st.button(t("load_history"), use_container_width=True):
                     st.session_state.load_tickers = [
                         {"ticker": r["ticker"], "qty": r["quantity"]} for r in latest_batch
@@ -583,19 +601,25 @@ if analyze and ticker_qty_list:
         st.error(t("no_valid"))
         st.stop()
 
-    # ── Save to Supabase ──────────────────────────────────
+    # ── Save to Neon ──────────────────────────────────────
     try:
-        for tk in ticker_data:
-            close = ticker_data[tk]["hist"]["Close"]
-            current_price = float(close.iloc[-1])
-            supabase.table("trades").insert({
-                "user_id":      st.session_state.nickname,
-                "nickname":     st.session_state.nickname,
-                "ticker":       tk,
-                "quantity":     qty_map[tk],
-                "price":        current_price,
-                "session_name": session_name.strip() if session_name.strip() else None,
-            }).execute()
+        conn = get_db()
+        with conn.cursor() as cur:
+            for tk in ticker_data:
+                close = ticker_data[tk]["hist"]["Close"]
+                current_price = float(close.iloc[-1])
+                cur.execute("""
+                    INSERT INTO trades (user_id, nickname, ticker, quantity, price, session_name)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (
+                    st.session_state.nickname,
+                    st.session_state.nickname,
+                    tk,
+                    qty_map[tk],
+                    current_price,
+                    session_name.strip() if session_name.strip() else None,
+                ))
+            conn.commit()
         st.toast(t("saved"), icon="💾")
     except Exception as e:
         st.warning(f"{t('save_failed')}: {e}")
@@ -820,31 +844,36 @@ if st.session_state.logged_in and st.session_state.nickname == ADMIN_NICKNAME an
     st.header(t("admin_page"))
 
     try:
-        all_users  = supabase.table("users").select("*").order("created_at", desc=True).execute()
-        all_trades = supabase.table("trades").select("*").order("created_at", desc=True).execute()
+        conn = get_db()
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM users ORDER BY created_at DESC")
+            all_users = cur.fetchall()
+            cur.execute("SELECT * FROM trades ORDER BY created_at DESC")
+            all_trades = cur.fetchall()
 
         col1, col2 = st.columns(2)
-        col1.metric(t("total_users"),  len(all_users.data))
-        col2.metric(t("total_trades"), len(all_trades.data))
+        col1.metric(t("total_users"),  len(all_users))
+        col2.metric(t("total_trades"), len(all_trades))
 
         st.subheader(t("all_users"))
-        if all_users.data:
-            users_df = pd.DataFrame(all_users.data)[["nickname", "created_at"]]
+        if all_users:
+            users_df = pd.DataFrame(all_users)[["nickname", "created_at"]]
             users_df["created_at"] = pd.to_datetime(users_df["created_at"]).dt.strftime("%Y-%m-%d %H:%M")
             st.dataframe(users_df, hide_index=True, use_container_width=True)
 
-            # 유저 삭제
             del_nick = st.selectbox(t("delete_user"),
-                                    [u["nickname"] for u in all_users.data if u["nickname"] != ADMIN_NICKNAME])
+                                    [u["nickname"] for u in all_users if u["nickname"] != ADMIN_NICKNAME])
             if st.button(t("delete_user"), key="del_user_btn"):
-                supabase.table("trades").delete().eq("nickname", del_nick).execute()
-                supabase.table("users").delete().eq("nickname", del_nick).execute()
+                with conn.cursor() as cur:
+                    cur.execute("DELETE FROM trades WHERE nickname = %s", (del_nick,))
+                    cur.execute("DELETE FROM users WHERE nickname = %s", (del_nick,))
+                    conn.commit()
                 st.success(t("user_deleted"))
                 st.rerun()
 
         st.subheader(t("all_trades"))
-        if all_trades.data:
-            trades_df = pd.DataFrame(all_trades.data)
+        if all_trades:
+            trades_df = pd.DataFrame(all_trades)
             cols = ["nickname", "session_name", "ticker", "quantity", "price", "created_at"]
             cols = [c for c in cols if c in trades_df.columns]
             trades_df = trades_df[cols]
