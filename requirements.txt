@@ -1,8 +1,7 @@
 streamlit
 pandas
 plotly
-supabase
+psycopg2-binary
 requests
 reportlab
 kaleido==0.2.1
-twelvedata
