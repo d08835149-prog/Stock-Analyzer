@@ -54,9 +54,9 @@ A multi-language stock analysis platform
 |---|---|
 | Frontend | Streamlit |
 | Charts | Plotly |
-| Market Data | yfinance |
+| Market Data | TwelveData |
 | News | Finnhub API |
-| Database | Supabase (PostgreSQL) |
+| Database | NeonDatabase |
 | Hosting | Streamlit Community Cloud |
 
 ---
