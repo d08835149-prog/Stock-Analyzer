@@ -133,6 +133,6 @@ Add all secrets under **App Settings → Secrets** in the Streamlit Cloud dashbo
 |---|---|
 | Developer | Ditto A. |
 | Feedback Source | Miguel |
-| AI Assistant | Claude (Anthropic) |
+| AI Assistant | ChatGPT and Gemini |
 
 
