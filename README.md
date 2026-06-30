@@ -1,7 +1,6 @@
-# 📈 Thornhill Stock League Engine
+# 📈Stock analyzer
 
-A multi-language stock analysis platform built for the Thornhill Stock League community in Canada.
-
+A multi-language stock analysis platform 
 ---
 
 ## 🚀 Features
@@ -126,7 +125,6 @@ Add all secrets under **App Settings → Secrets** in the Streamlit Cloud dashbo
 ## 📌 Notes
 
 - This app is for **analysis purposes only**
-- Actual mock trading is done via **MooMoo Trade**
 - Stock data refreshes every **20 minutes** to avoid API rate limits
 
 ---
@@ -142,6 +140,5 @@ Add all secrets under **App Settings → Secrets** in the Streamlit Cloud dashbo
 | Developer | Ditto A. |
 | Feedback Source | Miguel |
 | AI Assistant | Claude (Anthropic) |
-| All other people who gave ideas and feedback | SUZAN |
 
 
