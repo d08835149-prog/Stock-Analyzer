@@ -43,7 +43,7 @@ A multi-language stock analysis platform
 - 🇰🇷 한국어
 
 ### ⚡ Performance
-- Data cached for **10 minutes** to prevent API rate limiting
+- Data cached for **20 minutes** to prevent API rate limiting
 - Cache timestamp displayed on screen
 
 ---
