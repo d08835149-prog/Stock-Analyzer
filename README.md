@@ -75,8 +75,8 @@ A multi-language stock analysis platform
 
 ### 1. Clone the repo
 ```bash
-git clone https://github.com/your-username/Thornhill-Stock-Engine.git
-cd Thornhill-Stock-Engine
+git clone https://github.com/your-username/Stock-Analyzer.git
+cd Stock-Analyzer
 ```
 
 ### 2. Install dependencies
@@ -87,15 +87,15 @@ pip install -r requirements.txt
 ### 3. Configure secrets
 Create `.streamlit/secrets.toml`:
 ```toml
-SUPABASE_URL = "your_supabase_url"
-SUPABASE_KEY = "your_supabase_key"
+TWELVEDATA_API_KEY = "your-twelveData-API-Key"
+NEON_DATABASE_URL = "your-neon-url"
 FINNHUB_API_KEY = "your_finnhub_key"
 ADMIN_NICKNAME = "your_admin_nickname"
 ADMIN_PASSWORD = "your_admin_password"
 ```
 
 ### 4. Set up Supabase tables
-Run in Supabase SQL Editor:
+Run in Neon SQL Editor:
 ```sql
 create table users (
   id uuid default gen_random_uuid() primary key,
