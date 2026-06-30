@@ -1,11 +1,11 @@
 import streamlit as st
 import pandas as pd
+from datetime import datetime, timedelta
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import requests
-from datetime import datetime, timedelta
 import io
 import hashlib
 from reportlab.lib.pagesizes import letter
@@ -14,6 +14,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable, Image as RLImage
 from reportlab.lib.enums import TA_CENTER
+
 
 # ── Page Config ──────────────────────────────────────────────
 st.set_page_config(page_title="Stock Analyzer", layout="wide")
@@ -490,23 +491,50 @@ if "last_ticker_cache" not in st.session_state:
 
 TWELVEDATA_KEY = st.secrets.get("TWELVEDATA_API_KEY", "")
 
+def apply_period_filter(df, period):
+    now = pd.Timestamp.now()
+
+    if period == "1d":
+        cutoff = now - pd.Timedelta(days=1)
+    elif period == "5d":
+        cutoff = now - pd.Timedelta(days=5)
+    elif period == "1wk":
+        cutoff = now - pd.Timedelta(weeks=1)
+    elif period == "2wk":
+        cutoff = now - pd.Timedelta(weeks=2)
+    elif period == "1mo":
+        cutoff = now - pd.Timedelta(days=30)
+    elif period == "3mo":
+        cutoff = now - pd.Timedelta(days=90)
+    elif period == "6mo":
+        cutoff = now - pd.Timedelta(days=180)
+    elif period == "1y":
+        cutoff = now - pd.Timedelta(days=365)
+    elif period == "2y":
+        cutoff = now - pd.Timedelta(days=730)
+    elif period == "5y":
+        cutoff = now - pd.Timedelta(days=1825)
+    else:
+        return df
+
+    return df[df.index >= cutoff]
+
 PERIOD_TO_TD = {
-PERIOD_TO_TD = {
-    "1d": ("1min", 390),
-    "5d": ("15min", 130),
-    "1wk": ("1h", 50),
-    "2wk": ("1day", 20),
-    "1mo": ("1day", 35),
-    "3mo": ("1day", 100),
-    "6mo": ("1day", 200),
-    "1y": ("1day", 400),
-    "2y": ("1day", 800),
+    "1d": ("1min", 1000),
+    "5d": ("15min", 1000),
+    "1wk": ("1h", 1000),
+    "2wk": ("1day", 1000),
+    "1mo": ("1day", 1000),
+    "3mo": ("1day", 1000),
+    "6mo": ("1day", 1000),
+    "1y": ("1day", 1000),
+    "2y": ("1day", 2000),
     "5y": ("1day", 2000), 
 }
 
 @st.cache_data(ttl=1200, show_spinner=False)
 def fetch_ticker_data(ticker: str, period: str):
-    interval, outputsize_period = PERIOD_TO_TD.get(period, ("1day", "1year"))
+    interval, outputsize = PERIOD_TO_TD.get(period, ("1day", 100))
 
     # Time series
     url = "https://api.twelvedata.com/time_series"
@@ -530,12 +558,17 @@ def fetch_ticker_data(ticker: str, period: str):
     for col in ["open","high","low","close","volume"]:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
-    df = df.rename(columns={"open":"Open","high":"High","low":"Low","close":"Close","volume":"Volume"})
+    df = df.rename(columns={
+        "open":"Open",
+        "high":"High",
+        "low":"Low",
+        "close":"Close",
+        "volume":"Volume"
+    })
 
-    # 2wk 필터링
-    if period == "2wk":
-        cutoff = pd.Timestamp.now() - pd.Timedelta(days=14)
-        df = df[df.index >= cutoff]
+
+    df = apply_period_filter(df, period)
+
 
     # 종목 기본 정보
     quote_url = "https://api.twelvedata.com/quote"
