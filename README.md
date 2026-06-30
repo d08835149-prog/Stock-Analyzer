@@ -1,5 +1,10 @@
 # 📈Stock analyzer
 
+
+Before we begin, please send all issues, bug reports, feedback, questions, language additions, etc. regarding this site to d08835149@gmail.com.
+
+
+
 A multi-language stock analysis platform 
 ---
 
@@ -55,6 +60,16 @@ A multi-language stock analysis platform
 | Hosting | Streamlit Community Cloud |
 
 ---
+**## How to Use**
+1. Sign up and log in. (This is not mandatory, but it is recommended if you wish to save your analysis records.)
+
+2. Select an analysis period.
+
+3. Enter the tickers. (A ticker is a 4-digit code representing a company (usually 4 digits, but 5 digits also exist). Examples include MSFT, AAPL, GOOGL, NVDA, etc.) [Up to 10 companies are allowed]
+
+4. Click "Analyze"!! Then, enjoy the graphs and information. If you wish to save the data, you can also download a PDF file.
+
+
 
 ## ⚙️ Setup
 
