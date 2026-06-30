@@ -491,16 +491,17 @@ if "last_ticker_cache" not in st.session_state:
 TWELVEDATA_KEY = st.secrets.get("TWELVEDATA_API_KEY", "")
 
 PERIOD_TO_TD = {
-    "1d":  ("1min",  "1day"),
-    "5d":  ("15min", "5day"),
-    "1wk": ("1h",    "1week"),
-    "2wk": ("1day",  "1month"),
-    "1mo": ("1day",  "1month"),
-    "3mo": ("1day",  "3month"),
-    "6mo": ("1day",  "6month"),
-    "1y":  ("1day",  "1year"),
-    "2y":  ("1week", "2year"),
-    "5y":  ("1week", "5year"),
+PERIOD_TO_TD = {
+    "1d": ("1min", 390),
+    "5d": ("15min", 130),
+    "1wk": ("1h", 50),
+    "2wk": ("1day", 20),
+    "1mo": ("1day", 35),
+    "3mo": ("1day", 100),
+    "6mo": ("1day", 200),
+    "1y": ("1day", 400),
+    "2y": ("1day", 800),
+    "5y": ("1day", 2000), 
 }
 
 @st.cache_data(ttl=1200, show_spinner=False)
@@ -509,12 +510,12 @@ def fetch_ticker_data(ticker: str, period: str):
 
     # Time series
     url = "https://api.twelvedata.com/time_series"
-    params = {
-        "symbol":     ticker,
-        "interval":   interval,
-        "outputsize": 5000,
-        "order":      "ASC",
-        "apikey":     TWELVEDATA_KEY,
+     params = {
+        "symbol": ticker,
+        "interval": interval,
+        "outputsize": outputsize,
+        "order": "ASC",
+        "apikey": TWELVEDATA_KEY,
     }
     r = requests.get(url, params=params, timeout=10)
     data = r.json()
