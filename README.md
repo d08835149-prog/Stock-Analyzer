@@ -1,5 +1,15 @@
 # 📈Stock analyzer
 
+<img width="1914" height="773" alt="github-photos" src="https://github.com/user-attachments/assets/67393766-de42-4ef8-a9cf-6865ed309747" />
+
+
+
+
+
+
+
+
+
 
 Before we begin, please send all issues, bug reports, feedback, questions, language additions, etc. regarding this site to d08835149@gmail.com.
 
