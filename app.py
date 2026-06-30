@@ -16,7 +16,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.enums import TA_CENTER
 
 # ── Page Config ──────────────────────────────────────────────
-st.set_page_config(page_title="Thornhill Stock League", layout="wide")
+st.set_page_config(page_title="Stock Analyzer", layout="wide")
 
 st.markdown("""
 <style>
@@ -142,7 +142,7 @@ def generate_pdf_report(summary_rows, ticker_data, period_label, nickname, sessi
     sub_style   = ParagraphStyle("sub",   fontSize=9,  fontName="Helvetica",
                                  alignment=TA_CENTER, spaceAfter=8, textColor=colors.grey)
 
-    story.append(Paragraph("Thornhill Stock League Engine", title_style))
+    story.append(Paragraph("Stock Analyzer", title_style))
     story.append(Paragraph(session_name if session_name else "Analysis Report", sub_style))
     story.append(Paragraph(
         f"User: {nickname}  |  Period: {period_label}  |  {datetime.now().strftime('%Y-%m-%d %H:%M')}",
@@ -275,7 +275,7 @@ def generate_pdf_report(summary_rows, ticker_data, period_label, nickname, sessi
     story.append(Spacer(1, 20))
     story.append(HRFlowable(width="100%", thickness=1, color=colors.lightgrey))
     story.append(Paragraph(
-        "Thornhill Stock League Engine  |  For analysis purposes only  |  Not financial advice",
+        "Stock Analyzer  |  For analysis purposes only  |  Not financial advice",
         ParagraphStyle("footer", fontSize=7, textColor=colors.grey, alignment=TA_CENTER)
     ))
 
@@ -337,7 +337,7 @@ def do_change_pw(nickname, current_pw, new_pw):
     return "ok"
 
 # ── Title ─────────────────────────────────────────────────────
-st.title("📈 Thornhill Stock League Engine")
+st.title("📈Stock Analyzer")
 
 # ════════════════════════════════════════════════════════════
 # Sidebar: Period + Ticker + Quantity Input
