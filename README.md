@@ -30,12 +30,6 @@ A multi-language stock analysis platform
 - Change password
 - Personal analysis history (last 20 records)
 
-### 🛡️ Admin Panel (Ditto only)
-- Secured with a separate admin password
-- View all users and total analysis count
-- View all trade records
-- Delete users and their data
-
 ### 🌐 Multilingual Support
 - 🇬🇧 English
 - 🇫🇷 Français
