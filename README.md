@@ -77,6 +77,14 @@ Add all secret keys in App Settings → Secrets on the Streamlit Cloud Dashboard
 
 Therefore, it is not perfectly real-time....
 
+## Additional Features I Want to Add
+
+Additional features I want to add include...
+
+- I want to support cryptocurrencies such as Bitcoin and Ethereum, not just stocks.
+
+- A website with smooth speed achieved through a major transition to the C programming language.
+
 
 ## Production Team
 
