@@ -538,13 +538,14 @@ def fetch_ticker_data(ticker: str, period: str):
 
     # Time series
     url = "https://api.twelvedata.com/time_series"
-     params = {
+    params = {
         "symbol": ticker,
         "interval": interval,
         "outputsize": outputsize,
         "order": "ASC",
         "apikey": TWELVEDATA_KEY,
     }
+
     r = requests.get(url, params=params, timeout=10)
     data = r.json()
 
