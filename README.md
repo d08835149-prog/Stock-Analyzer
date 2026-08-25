@@ -1,99 +1,122 @@
-# 📈Stock analyzer
+# Stock Analyzer
 
-<img width="1914" height="773" alt="github-photos" src="https://github.com/user-attachments/assets/67393766-de42-4ef8-a9cf-6865ed309747" />
+![Stock Analyzer Demo](screenshots/StockAnalyzerDemo.png)
 
+A web-based stock analysis tool for comparing stocks, viewing price history, technical indicators, recent news, and saving analysis sessions.
 
+Originally built with Python and Streamlit, the project was later rebuilt with Next.js for deployment on Vercel.
 
+## Features
 
-
-
-
-
-
-
-Before we begin, please send all issues, bug reports, feedback, questions, language additions, etc. regarding this site to d08835149@gmail.com.
-
-
-#The stock analyzer I created is a website developed in Python capable of analyzing stocks.
-
-
-##The features supported by my website include:
-
-Simultaneous analysis of 10 stocks and support for stock exchanges in the US, Canada, the UK, Germany, Japan, and Korea. It provides data for periods ranging from 1 day to 5 years, allows for stock comparison via price charts, and offers individual stock charts.
-
-Individual stock charts include data such as candlesticks (open/horizontal/vertical), 20-day moving averages, 50-day moving averages, Bollinger Bands (upper/lower), and volume bars, including current price, previous day's closing price, market capitalization, bid/ask prices, opening price, closing price, high price, and low price.
-
-Additionally, it provides the latest news for each stock via the Finnhub API.
-
-
-###In addition, it supports a user system that enables sign-up, login, logout, and password changes using nickname + password authentication (SHA-256 hash).
-
-###It also supports English, Chinese, Persian, French, Spanish, Japanese, and Korean.
-
-
-###The detailed features include:
-
-- Data cached for **20 minutes** to prevent API rate limiting
-
-- Cache timestamp displayed on screen
-
-This has been included.
+- Analyze up to 10 stocks at once
+- Support for multiple stock exchanges
+- Multiple analysis periods
+- Portfolio summary
+- Combined stock price chart
+- Candlestick charts
+- Moving averages (MA20 / MA50)
+- Bollinger Bands
+- Trading volume
+- Recent company news
+- User accounts
+- Saved analysis history
+- Reload previous analyses
+- PDF report export
+- API response caching
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | Streamlit |
-| Charts | Plotly |
-| Market Data | TwelveData |
-| News | Finnhub API |
-| Database | NeonDatabase |
-| Hosting | Streamlit Community Cloud |
+- Next.js
+- React
+- TypeScript
+- CSS
+- Plotly.js
+- Neon PostgreSQL
+- Twelve Data API
+- Finnhub API
+- Vercel
 
+## APIs
 
-## How to Use
-1. Sign up and log in. (This is not mandatory, but it is recommended if you wish to save your analysis records.)
+### Twelve Data
 
-2. Select an analysis period.
+Used for stock quotes and historical market data.
 
-3. Enter the tickers. (A ticker is a 4-digit code representing a company (usually 4 digits, but 5 digits also exist). Examples include MSFT, AAPL, GOOGL, NVDA, etc.) [Up to 10 companies are allowed]
+### Finnhub
 
-4. Click “Analyze”!! Then, enjoy the graphs and information. If you wish to save the data, you can also download a PDF file.
+Used for recent company news.
 
+## Caching
+
+Stock history and news requests are cached to reduce unnecessary API calls and help avoid API rate limits.
+
+- Historical stock data: 20 minutes
+- News: 15 minutes
+
+## Running Locally
+
+Clone the repository:
+
+```bash
+git clone https://github.com/d08835149-prog/Stock-Analyzer.git
+cd Stock-Analyzer
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Create a `.env.local` file in the project root:
+
+```env
+TWELVEDATA_API_KEY=your_twelve_data_api_key
+FINNHUB_API_KEY=your_finnhub_api_key
+NEON_DATABASE_URL=your_neon_database_url
+AUTH_SECRET=your_auth_secret
+```
+
+Then start the development server:
+
+```bash
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:3000
+```
+
+## Build
+
+To create a production build:
+
+```bash
+npm run build
+```
 
 ## Deployment
 
-Deployed to Streamlit Community Cloud.
+The application is deployed with Vercel.
 
-Add all secret keys in App Settings → Secrets on the Streamlit Cloud Dashboard.
+Environment variables must be configured in the Vercel project settings before deployment.
 
----
+## Project History
 
-## Note
+The first version of Stock Analyzer was built with Python and Streamlit.
 
-- This app is for analytics purposes only.
+It worked, but the hosting setup introduced cold starts and made the application slower to open after periods of inactivity.
 
-- Stock data is updated every 20 minutes to avoid API usage limits.
+The project was later migrated to Next.js and Vercel. During the migration, the frontend and API structure were rebuilt while keeping the main stock analysis features.
 
-Therefore, it is not perfectly real-time....
+## Disclaimer
 
-## Additional Features I Want to Add
+Stock Analyzer is intended for educational and informational purposes only.
 
-Additional features I want to add include...
+The information displayed by this application should not be considered financial or investment advice.
 
-- I want to support cryptocurrencies such as Bitcoin and Ethereum, not just stocks.
+## License
 
-- A website with smooth speed achieved through a major transition to the C programming language.
-
-
-## Production Team
-
-| Role | Name |
-
-|---|---|
-
-| Developer | Ditto A. |
-
-| Feedback Provider | Miguel |
-
-| AI Assistant | ChatGPT and Gemini |
+MIT
