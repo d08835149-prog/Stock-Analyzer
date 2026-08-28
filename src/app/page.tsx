@@ -15,7 +15,6 @@ import StockNews from "@/components/StockNews";
 
 type TickerRow = {
   ticker: string;
-  exchange: string;
   quantity: number;
 };
 
@@ -47,22 +46,12 @@ type StockResult = {
   news: NewsItem[];
 };
 
-const exchanges = [
-  { value: "US", label: "US" },
-  { value: "CA", label: "CA" },
-  { value: "UK", label: "UK" },
-  { value: "DE", label: "DE" },
-  { value: "JP", label: "JP" },
-  { value: "KR", label: "KR" },
-];
-
 export default function Home() {
   const [period, setPeriod] = useState("1y");
 
   const [tickers, setTickers] = useState<TickerRow[]>([
     {
       ticker: "",
-      exchange: "US",
       quantity: 1,
     },
   ]);
@@ -80,7 +69,6 @@ export default function Home() {
       ...tickers,
       {
         ticker: "",
-        exchange: "US",
         quantity: 1,
       },
     ]);
@@ -143,8 +131,7 @@ export default function Home() {
             new URLSearchParams({
               symbol:
                 row.ticker.trim(),
-              exchange:
-                row.exchange,
+              exchange: "US",
               period,
             });
 
@@ -299,10 +286,6 @@ export default function Home() {
           ticker:
             trade.ticker.toUpperCase(),
 
-          exchange:
-            trade.exchange ||
-            "US",
-
           quantity:
             Number(
               trade.quantity
@@ -422,6 +405,10 @@ export default function Home() {
             🏢 Enter Tickers
           </h3>
 
+          <p className="ticker-count">
+            U.S. stocks only
+          </p>
+
           {tickers.map(
             (row, index) => (
               <div
@@ -446,38 +433,7 @@ export default function Home() {
                     }
                   />
 
-                  <select
-                    className="exchange"
-                    value={
-                      row.exchange
-                    }
-                    onChange={(e) =>
-                      updateTicker(
-                        index,
-                        "exchange",
-                        e.target.value
-                      )
-                    }
-                  >
-                    {exchanges.map(
-                      (
-                        exchange
-                      ) => (
-                        <option
-                          key={
-                            exchange.value
-                          }
-                          value={
-                            exchange.value
-                          }
-                        >
-                          {
-                            exchange.label
-                          }
-                        </option>
-                      )
-                    )}
-                  </select>
+
                 </div>
 
                 <div className="quantity-row">
@@ -578,9 +534,8 @@ export default function Home() {
           !loading &&
           !error && (
             <div className="welcome-card">
-              👈 Enter a period and
-              tickers on the left,
-              then click Analyze.
+              👈 Enter a period and U.S. stock
+              tickers on the left, then click Analyze.
             </div>
           )}
 
@@ -642,7 +597,7 @@ export default function Home() {
                 return (
                   <div
                     className="stock-result"
-                    key={`${stock.symbol}-${stock.exchange}`}
+                    key={stock.symbol}
                   >
                     <article className="stock-card">
                       <div className="stock-card-header">
@@ -788,17 +743,6 @@ export default function Home() {
                           </strong>
                         </div>
 
-                        <div>
-                          <span>
-                            Exchange
-                          </span>
-
-                          <strong>
-                            {
-                              stock.exchange
-                            }
-                          </strong>
-                        </div>
                       </div>
                     </article>
 

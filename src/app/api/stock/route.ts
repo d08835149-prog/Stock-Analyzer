@@ -5,7 +5,6 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
 
     const symbol = searchParams.get("symbol");
-    const exchange = searchParams.get("exchange") || "US";
 
     if (!symbol) {
       return NextResponse.json(
@@ -23,11 +22,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let twelveDataSymbol = symbol.toUpperCase();
-
-    if (exchange === "CA") {
-      twelveDataSymbol = `${symbol.toUpperCase()}:TSX`;
-    }
+    const twelveDataSymbol = symbol.toUpperCase();
 
     const url =
       `https://api.twelvedata.com/quote` +
@@ -58,9 +53,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       symbol: data.symbol ?? twelveDataSymbol,
-      name: data.name ?? symbol.toUpperCase(),
-      exchange: data.exchange ?? exchange,
-      currency: data.currency ?? "",
+      name: data.name ?? twelveDataSymbol,
+      exchange: data.exchange ?? "US",
+      currency: data.currency ?? "USD",
       price: Number(data.close),
       previousClose: Number(data.previous_close),
       change: Number(data.change),

@@ -2,14 +2,14 @@
 
 ![Stock Analyzer Demo](screenshots/StockAnalyzerDemo.png)
 
-A web-based stock analysis tool for comparing stocks, viewing price history, technical indicators, recent news, and saving analysis sessions.
+A web-based stock analysis tool for analyzing and comparing U.S. stocks, viewing price history, technical indicators, recent news, and saving analysis sessions.
 
 Originally built with Python and Streamlit, the project was later rebuilt with Next.js for deployment on Vercel.
 
 ## Features
 
-- Analyze up to 10 stocks at once
-- Support for multiple stock exchanges
+- Analyze up to 10 U.S. stocks at once
+- U.S. stock market support
 - Multiple analysis periods
 - Portfolio summary
 - Combined stock price chart
@@ -116,6 +116,10 @@ The project was later migrated to Next.js and Vercel. During the migration, the 
 Stock Analyzer is intended for educational and informational purposes only.
 
 The information displayed by this application should not be considered financial or investment advice.
+
+## P.S.
+
+The current version focuses on U.S. stocks because some international market data requires additional API plans.
 
 ## License
 
